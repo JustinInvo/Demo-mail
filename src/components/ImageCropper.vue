@@ -1,6 +1,7 @@
 <template>
   <div class="mainCropper">
     <div class="editCropper">
+      {{count}}
       <img id="image" :src="imageSrc" alt="image" />
       <div class="">
         <!-- <cutList :listDownload="cutList"/> -->
@@ -43,6 +44,8 @@
 <script>
 import { ref, onMounted } from 'vue';
 import Cropper from "cropperjs";
+import { storeToRefs } from "pinia";
+import {useCounterCuts} from '@/store/index'
 
 export default {
   setup() {
@@ -59,6 +62,9 @@ export default {
     const cutList = ref([]);
     let modelMobilenet = null;
     let classifier = null;
+    const useCounter = useCounterCuts()
+    const { count } = storeToRefs(useCounter);
+    const { increment } = useCounter;
 
     onMounted(() => {
       initialMobilenet()
@@ -105,6 +111,7 @@ export default {
       cropperData = cropper.getData();
       setTimeout(()=>{
         analisisImg(id)
+        increment()
       },500)
     };
 
@@ -140,24 +147,24 @@ export default {
       const imgPixels = await tf.browser.fromPixels(image);
       const activation = await modelMobilenet.infer(imgPixels, true);
       // Agrega un ejemplo con la etiqueta "boton"
-      classifier.addExample(activation, "boton");
+      classifier.addExample(activation, 'boton')
 
       // Utiliza el modelo knn classifier para predecir la clase de la imagen
       const result = await classifier.predictClass(activation);
 
-      console.log("La imagen es un" + result.label);
+      console.log("La imagen es un " + result.label);
 
       imgPixels.dispose();
     };
     const whatElement = async (imagenId) =>{
-      //Este metodo predice que tipo de elemento es la imagen
-      const image = document.getElementById(imagenId);
-      const imgPixels = await tf.browser.fromPixels(image);
-      const activation = modelMobilenet.infer(imgPixels,'conv_preds');
+      // Este metodo predice que tipo de elemento es la imagen
+      const image = document.getElementById(imagenId)
+      const imgPixels = await tf.browser.fromPixels(image)
+      const activation = modelMobilenet.infer(imgPixels, 'conv_preds')
       var result2;
       try {
         result2 = await classifier.predictClass(activation);
-        console.log('result2: ',result2)
+        console.log('result2: ', result2)
       } catch (error) {
         console.log('modelo no configurado',error)
       }
@@ -175,7 +182,10 @@ export default {
       cropImage,
       updateCropperData,
       downloadImage,
-      whatElement
+      whatElement,
+      useCounter,
+      count,
+      increment
     }
   }
 }
